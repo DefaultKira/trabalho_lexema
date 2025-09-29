@@ -1,241 +1,249 @@
-# copie todo este arquivo para automato_lexer.py
+# Importações necessárias para anotação de tipos e para o sistema
 from typing import List, Tuple, Optional
 import sys
 
-RESERVED = {
-    'int':'T_TYPE', 'float':'T_TYPE', 'char':'T_TYPE', 'void':'T_TYPE', 'double':'T_TYPE',
-    'if':'T_IF', 'else':'T_ELSE', 'for':'T_FOR', 'while':'T_WHILE', 'do':'T_DO',
-    'return':'T_RETURN', 'break':'T_BREAK', 'continue':'T_CONTINUE'
+# Dicionário que mapeia lexemas de palavras reservadas para seus tipos de token
+PALAVRAS_RESERVADAS = {
+    'int': 'T_TIPO', 'float': 'T_TIPO', 'char': 'T_TIPO', 'void': 'T_TIPO', 'double': 'T_TIPO',
+    'if': 'T_IF', 'else': 'T_ELSE', 'for': 'T_FOR', 'while': 'T_WHILE', 'do': 'T_DO',
+    'return': 'T_RETURN', 'break': 'T_BREAK', 'continue': 'T_CONTINUE'
 }
 
-SINGLE_CHAR_TOKENS = {
-    ';':'T_SEMI', ',':'T_COMMA', '(':'T_LPAREN', ')':'T_RPAREN',
-    '{':'T_LBRACE', '}':'T_RBRACE', '+':'T_OP_ARITH', '-':'T_OP_ARITH',
-    '*':'T_OP_ARITH', '%':'T_OP_ARITH', '.':'T_DOT', ':':'T_COLON'
+# Dicionário para tokens simples de um único caractere
+TOKENS_DE_UM_CARACTERE = {
+    ';': 'T_PONTO_VIRGULA', ',': 'T_VIRGULA', '(': 'T_PARENTESES_ESQ', ')': 'T_PARENTESES_DIR',
+    '{': 'T_CHAVES_ESQ', '}': 'T_CHAVES_DIR', '+': 'T_OP_ARIT', '-': 'T_OP_ARIT',
+    '*': 'T_OP_ARIT', '%': 'T_OP_ARIT', '.': 'T_PONTO', ':': 'T_DOIS_PONTOS'
 }
 
-class Lexer:
-    def __init__(self, source: str):
-        self.src = source
-        self.i = 0
-        self.line = 1
-        self.col = 1
-        self.tokens: List[Tuple[str,str,int,int]] = []
-        self.symbols = {}  # identifier -> (line, col)
-        self.errors: List[Tuple[str,int,int]] = []
+class AnalisadorLexico:
+    """
+    Classe principal que implementa o Analisador Léxico (Lexer).
+    Percorre o código fonte e o converte em uma lista de tokens.
+    """
+    def __init__(self, codigo_fonte: str):
+        self.codigo_fonte = codigo_fonte
+        self.posicao_atual = 0
+        self.linha = 1
+        self.coluna = 1
+        self.tokens: List[Tuple[str, str, int, int]] = []
+        self.tabela_simbolos = {}  # Guarda identificadores: nome -> (linha, coluna)
+        self.erros: List[Tuple[str, int, int]] = []
 
-    def peek(self, k=0) -> Optional[str]:
-        idx = self.i + k
-        if idx < len(self.src):
-            return self.src[idx]
+    def ver_proximo(self, k=0) -> Optional[str]:
+        indice = self.posicao_atual + k
+        if indice < len(self.codigo_fonte):
+            return self.codigo_fonte[indice]
         return None
 
-    def advance(self) -> Optional[str]:
-        c = self.peek()
-        if c is None:
+    def avancar(self) -> Optional[str]:
+        char_atual = self.ver_proximo()
+        if char_atual is None:
             return None
-        self.i += 1
-        if c == '\n':
-            self.line += 1
-            self.col = 1
+        
+        self.posicao_atual += 1
+        if char_atual == '\n':
+            self.linha += 1
+            self.coluna = 1
         else:
-            self.col += 1
-        return c
+            self.coluna += 1
+        return char_atual
 
-    def add_token(self, ttype: str, lexeme: str, line: int, col: int):
-        self.tokens.append((ttype, lexeme, line, col))
-        if ttype == 'T_ID':
-            if lexeme not in self.symbols:
-                self.symbols[lexeme] = (line, col)
+    def adicionar_token(self, tipo: str, lexema: str, linha: int, coluna: int):
+        """ Adiciona um token reconhecido à lista de tokens. """
+        self.tokens.append((tipo, lexema, linha, coluna))
+        # Se o token for um identificador, adiciona à tabela de símbolos se for a primeira vez
+        if tipo == 'T_ID':
+            if lexema not in self.tabela_simbolos:
+                self.tabela_simbolos[lexema] = (linha, coluna)
 
-    def add_error(self, msg: str, line: int, col: int):
-        self.errors.append((msg, line, col))
+    def adicionar_erro(self, mensagem: str, linha: int, coluna: int):
+        self.erros.append((mensagem, linha, coluna))
 
-    def tokenize(self):
+    def analisar(self):
         while True:
-            c = self.peek()
-            if c is None:
+            char_atual = self.ver_proximo()
+            if char_atual is None:
+                # Fim do arquivo, encerra a análise
                 break
 
-            # Skip whitespace
-            if c.isspace():
-                self.advance()
+            if char_atual.isspace():
+                self.avancar()
                 continue
 
-            start_line, start_col = self.line, self.col
+            linha_inicio, coluna_inicio = self.linha, self.coluna
 
-            # IDENTIFIERS / RESERVED
-            if c.isalpha() or c == '_':
-                lex = ''
-                while self.peek() is not None and (self.peek().isalnum() or self.peek() == '_'):
-                    lex += self.advance()
-                # reserved words check
-                token_type = RESERVED.get(lex, 'T_ID')
-                self.add_token(token_type, lex, start_line, start_col)
+            # --- Etapa 2: Reconhecer Identificadores e Palavras Reservadas ---
+            if char_atual.isalpha() or char_atual == '_':
+                lexema = ''
+                while self.ver_proximo() is not None and (self.ver_proximo().isalnum() or self.ver_proximo() == '_'):
+                    lexema += self.avancar()
+                
+                # Verifica se o lexema é uma palavra reservada ou um identificador comum
+                tipo_token = PALAVRAS_RESERVADAS.get(lexema, 'T_ID')
+                self.adicionar_token(tipo_token, lexema, linha_inicio, coluna_inicio)
                 continue
 
-            # NUMBERS (int, float, exponent) - handles leading '.' if followed by digit
-            if c.isdigit() or (c == '.' and self.peek(1) and self.peek(1).isdigit()):
-                lex = ''
-                saw_dot = False
-                saw_exp = False
+            if char_atual.isdigit() or (char_atual == '.' and self.ver_proximo(1) and self.ver_proximo(1).isdigit()):
+                lexema = ''
+                viu_ponto = False
+                viu_expoente = False
 
-                # leading digits
-                if c == '.':
-                    saw_dot = True
-                    lex += self.advance()  # consume '.'
-                    # must have digits after '.' for a valid float starting with '.'
-                    if not (self.peek() and self.peek().isdigit()):
-                        # Single '.' as delimiter/token
-                        self.add_token('T_DOT', '.', start_line, start_col)
+                if char_atual == '.':
+                    viu_ponto = True
+                    lexema += self.avancar() # consome '.'
+                    # Garante que um número começando com '.' seja seguido por dígitos
+                    if not (self.ver_proximo() and self.ver_proximo().isdigit()):
+                        self.adicionar_token('T_PONTO', '.', linha_inicio, coluna_inicio)
                         continue
-                    while self.peek() and self.peek().isdigit():
-                        lex += self.advance()
-                else:
-                    while self.peek() and self.peek().isdigit():
-                        lex += self.advance()
-                    # fraction part
-                    if self.peek() == '.':
-                        saw_dot = True
-                        lex += self.advance()
-                        # allow zero or more digits after dot (accept "123." as float)
-                        while self.peek() and self.peek().isdigit():
-                            lex += self.advance()
-
-                # exponent part
-                if self.peek() and (self.peek() == 'e' or self.peek() == 'E'):
-                    saw_exp = True
-                    lex += self.advance()
-                    if self.peek() and (self.peek() == '+' or self.peek() == '-'):
-                        lex += self.advance()
-                    # must have at least one digit after exponent
-                    if not (self.peek() and self.peek().isdigit()):
-                        self.add_error(f"Numero exponencial malformulado '{lex}'", start_line, start_col)
-                        # consume until non-alnum to avoid infinite loop
-                        while self.peek() and self.peek().isalnum():
-                            self.advance()
+                
+                # Consome a parte inteira (se houver)
+                while self.ver_proximo() and self.ver_proximo().isdigit():
+                    lexema += self.avancar()
+                
+                # Consome a parte fracionária (se houver)
+                if self.ver_proximo() == '.':
+                    if viu_ponto: # Erro, dois pontos no mesmo número
+                        self.adicionar_erro(f"Número malformado com múltiplos pontos: '{lexema}.'", linha_inicio, coluna_inicio)
+                    else:
+                        viu_ponto = True
+                        lexema += self.avancar()
+                        while self.ver_proximo() and self.ver_proximo().isdigit():
+                            lexema += self.avancar()
+                
+                # Consome a parte do expoente (se houver)
+                if self.ver_proximo() and self.ver_proximo().lower() == 'e':
+                    viu_expoente = True
+                    lexema += self.avancar()
+                    if self.ver_proximo() and self.ver_proximo() in ('+', '-'):
+                        lexema += self.avancar()
+                    
+                    if not (self.ver_proximo() and self.ver_proximo().isdigit()):
+                        self.adicionar_erro(f"Número exponencial malformado '{lexema}'", linha_inicio, coluna_inicio)
                         continue
-                    while self.peek() and self.peek().isdigit():
-                        lex += self.advance()
+                    
+                    while self.ver_proximo() and self.ver_proximo().isdigit():
+                        lexema += self.avancar()
 
-                # decide token type
-                if saw_dot or saw_exp:
-                    self.add_token('T_FLOAT', lex, start_line, start_col)
+                # Decide o tipo do token numérico
+                if viu_ponto or viu_expoente:
+                    self.adicionar_token('T_NUMERO_FLOAT', lexema, linha_inicio, coluna_inicio)
                 else:
-                    self.add_token('T_INT', lex, start_line, start_col)
+                    self.adicionar_token('T_NUMERO_INT', lexema, linha_inicio, coluna_inicio)
                 continue
 
-            # OPERATORS & DELIMITERS & COMMENTS
-            # Two-char operators start: ==, !=, <=, >=, &&, ||
-            if c in ('=', '!', '<', '>'):
-                ch = self.advance()
-                if self.peek() == '=':
-                    ch2 = self.advance()
-                    self.add_token('T_OP_REL', ch+ch2, start_line, start_col)
+            # Operadores que podem ter dois caracteres: ==, !=, <=, >=, &&, ||
+            if char_atual in ('=', '!', '<', '>'):
+                char1 = self.avancar()
+                if self.ver_proximo() == '=':
+                    char2 = self.avancar()
+                    self.adicionar_token('T_OP_REL', char1 + char2, linha_inicio, coluna_inicio)
                 else:
-                    if ch == '=':
-                        self.add_token('T_ATRIB', ch, start_line, start_col)
-                    elif ch == '!':
-                        self.add_token('T_OP_LOGIC', ch, start_line, start_col)
-                    else:  # '<' or '>'
-                        self.add_token('T_OP_REL', ch, start_line, start_col)
+                    if char1 == '=':
+                        self.adicionar_token('T_ATRIBUICAO', char1, linha_inicio, coluna_inicio)
+                    elif char1 == '!':
+                        self.adicionar_token('T_OP_LOGICO', char1, linha_inicio, coluna_inicio)
+                    else:  # '<' ou '>'
+                        self.adicionar_token('T_OP_REL', char1, linha_inicio, coluna_inicio)
                 continue
 
-            if c in ('&', '|'):
-                ch = self.advance()
-                if self.peek() == ch:
-                    ch2 = self.advance()
-                    self.add_token('T_OP_LOGIC', ch+ch2, start_line, start_col)
+            if char_atual in ('&', '|'):
+                char1 = self.avancar()
+                if self.ver_proximo() == char1:
+                    char2 = self.avancar()
+                    self.adicionar_token('T_OP_LOGICO', char1 + char2, linha_inicio, coluna_inicio)
                 else:
-                    self.add_error(f"Simbolo sozinho inesperado '{ch}' (esperando '{ch}{ch}')", start_line, start_col)
+                    self.adicionar_erro(f"Símbolo único inesperado '{char1}' (esperava-se '{char1}{char1}')", linha_inicio, coluna_inicio)
                 continue
 
-            if c == '/':
-                self.advance()
-                nxt = self.peek()
-                if nxt == '/':
-                    # line comment: consume to end of line
-                    self.advance()
-                    while self.peek() is not None and self.peek() != '\n':
-                        self.advance()
+            # Divisão ou Comentários
+            if char_atual == '/':
+                self.avancar() # Consome a primeira '/'
+                proximo_char = self.ver_proximo()
+                if proximo_char == '/':
+                    # Comentário de linha: consome até o final da linha
+                    self.avancar()
+                    while self.ver_proximo() is not None and self.ver_proximo() != '\n':
+                        self.avancar()
                     continue
-                elif nxt == '*':
-                    # block comment: consume until */
-                    self.advance()
-                    closed = False
+                elif proximo_char == '*':
+                    # Comentário de bloco: consome até encontrar */
+                    self.avancar()
                     while True:
-                        if self.peek() is None:
-                            self.add_error("Bloco de comentario não terminado", start_line, start_col)
+                        if self.ver_proximo() is None:
+                            self.adicionar_erro("Bloco de comentário não finalizado", linha_inicio, coluna_inicio)
                             break
-                        if self.peek() == '*' and self.peek(1) == '/':
-                            self.advance(); self.advance()
-                            closed = True
+                        if self.ver_proximo() == '*' and self.ver_proximo(1) == '/':
+                            self.avancar(); self.avancar()
                             break
                         else:
-                            self.advance()
+                            self.avancar()
                     continue
                 else:
-                    self.add_token('T_OP_ARITH', '/', start_line, start_col)
+                    # É apenas um operador de divisão
+                    self.adicionar_token('T_OP_ARIT', '/', linha_inicio, coluna_inicio)
                     continue
 
-            # single-char tokens (operators, delimiters)
-            if c in SINGLE_CHAR_TOKENS:
-                tok = SINGLE_CHAR_TOKENS[c]
-                self.advance()
-                self.add_token(tok, c, start_line, start_col)
+            # Tokens de um único caractere
+            if char_atual in TOKENS_DE_UM_CARACTERE:
+                token_info = TOKENS_DE_UM_CARACTERE[char_atual]
+                self.avancar()
+                self.adicionar_token(token_info, char_atual, linha_inicio, coluna_inicio)
                 continue
 
-            # other single-char arith ops that might not be in dict
-            if c in '+-*/%':
-                self.add_token('T_OP_ARITH', self.advance(), start_line, start_col)
-                continue
+            # --- Etapa 5: Tratamento de Erros ---
+            # Se chegou até aqui, o caractere é desconhecido
+            self.adicionar_erro(f"Caractere desconhecido '{char_atual}'", linha_inicio, coluna_inicio)
+            self.avancar()
 
-            # unknown character
-            self.add_error(f"Caractere desconhecido '{c}'", start_line, start_col)
-            self.advance()
-
-        return self.tokens, self.symbols, self.errors
+        return self.tokens, self.tabela_simbolos, self.erros
 
 
-def pretty_print(tokens, symbols, errors):
-    print("\nTOKENS:")
+def imprimir_resultados(tokens, tabela_simbolos, erros):
+    """ Formata e imprime os resultados da análise léxica. """
+    print("\n--- LISTA DE TOKENS ---")
     if not tokens:
-        print("  (nenhum token reconhecido)")
-    for t in tokens:
-        ttype, lex, ln, col = t
-        print(f"  {ttype:12} | {lex:25} | line {ln:3}, col {col:3}")
+        print("  (Nenhum token foi reconhecido)")
+    for token in tokens:
+        tipo, lexema, linha, coluna = token
+        print(f"  {tipo:20} | {lexema:25} | Linha {linha:3}, Coluna {coluna:3}")
 
-    print("\nTABELA DE SIMBOLOS (identificadores):")
-    if not symbols:
-        print("  (vazio)")
-    for ident, pos in sorted(symbols.items()):
-        ln,col = pos
-        print(f"  {ident:20} visto pela primeira vez em lin {ln}, col {col}")
+    print("\n--- TABELA DE SÍMBOLOS (Identificadores) ---")
+    if not tabela_simbolos:
+        print("  (Vazia)")
+    for identificador, pos in sorted(tabela_simbolos.items()):
+        linha, coluna = pos
+        print(f"  {identificador:20} | Visto pela primeira vez em Linha {linha}, Coluna {coluna}")
 
-    print("\nERRORS:")
-    if not errors:
-        print("  (no errors)")
-    for e in errors:
-        msg, ln, col = e
-        print(f"  {msg} (line {ln}, col {col})")
-    print("\n" + "-"*60 + "\n")
+    print("\n--- RELATÓRIO DE ERROS LÉXICOS ---")
+    if not erros:
+        print("  (Nenhum erro encontrado)")
+    for erro in erros:
+        msg, linha, coluna = erro
+        print(f"  ERRO: {msg} (Linha {linha}, Coluna {coluna})")
+    print("\n" + "="*60 + "\n")
 
 
-# Quick demo if script is executed directly
+# Seção principal para demonstrar o funcionamento do analisador
 if __name__ == "__main__":
-    samples = {
-        "test1": "if (x == 10) y = y + 1;",
-        "test2": "while (a != b) { /* comment */ c = 3.14e-2; }",
-        "test3": "x = .5; y = 123.; z = 5e; a && b || c; d = e <= f; // end",
-        "test4_unclosed": "code /* unclosed comment\n x = 1;",
-         "meu_teste_1": "int resultado = (100 * 2) / 4;",
-        "teste_de_erro": "float val = 3.14&;",
-        "teste_comentario_nao_fechado": "int x = 10; /* este comentario nao fecha",
+    # Dicionário com códigos de exemplo para teste
+    amostras_de_codigo = {
+        "teste_completo": "if (x_val >= 10.5) { y = y + 1; } // fim da linha",
+        "teste_comentario_bloco": "while (a != b) { /* comentario de bloco */ c = 3.14e-2; }",
+        "teste_numeros": "x = .5; y = 123.; z = 5e;",
+        "teste_logico": "a && b || !c;",
+        "erro_comentario_nao_fechado": "int var = 1; /* este comentario nao fecha",
+        "erro_simbolo_solto": "float val = 3.14 & 5;",
+        "erro_caractere_invalido": "int resultado @= 10;",
+        "teste_docx": "int resultado = 10.5; if(resultado > 10) {resultado = resultado + 1;} /*Fim do teste &*/ &"
     }
 
-    for name, src in samples.items():
-        print(f"Amostra: {name}")
-        print(f"Fonte: {src}")
-        lexer = Lexer(src)
-        tokens, symbols, errors = lexer.tokenize()
-        pretty_print(tokens, symbols, errors)
+    # Executa a análise para cada amostra de código
+    for nome_amostra, codigo in amostras_de_codigo.items():
+        print(f"Analisando amostra: '{nome_amostra}'")
+        print(f"Código Fonte: {codigo}")
+        
+        analisador = AnalisadorLexico(codigo)
+        tokens, simbolos, erros = analisador.analisar()
+        
+        imprimir_resultados(tokens, simbolos, erros)
