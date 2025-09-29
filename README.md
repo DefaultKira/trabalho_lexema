@@ -52,28 +52,101 @@ As expressões regulares a seguir definem formalmente os padrões para os princi
 
 ---
 
-## 4. Diagrama do AFD (Simplificado)
+## 4. Diagrama do AFD (Detalhado)
 
-**Legenda:** `->` Estado Inicial, `(A)` = Estado de Aceitação (Final)
+**Legenda:** `->` Estado Inicial, `(A)` = Estado de Aceitação (Final), `Outro` = Qualquer caractere não especificado na transição.
 
 -> q0 (Inicial)
-|-- L --> q_Id (A: T_ID ou Palavra Reservada)
-|-- D --> q_Int (A: T_NUMERO_INT)
-|-- . --> q_Ponto (Válido apenas se seguido por dígito → T_NUMERO_FLOAT)
-|-- = --> q_Igual (Pode ser '=' ou '==')
-|-- ! --> q_Exclamacao (Pode ser '!' ou '!=')
-|-- < --> q_Menor (Pode ser '<' ou '<=')
-|-- > --> q_Maior (Pode ser '>' ou '>=')
-|-- & --> q_EComercial (Deve formar '&&')
-|-- | --> q_BarraVertical (Deve formar '||')
-|-- / --> q_Barra (Pode ser '/', '//' ou '/\*')
-|-- S --> q0 (Ignora espaço, tabulação ou nova linha)
-|-- O --> q_Delimitador (A: Delimitadores simples como ';', '(', etc.)
-|-- EOF --> Fim da Análise
+|-- L, \_ -> q_Id (A)
+|-- D -> q_Int (A)
+|-- . -> q_Ponto
+|-- = -> q_Igual (A: T_ATRIBUICAO)
+|-- ! -> q_Exclamacao (A: T_OP_LOGICO)
+|-- < -> q_Menor (A: T_OP_REL)
+|-- > -> q_Maior (A: T_OP_REL)
+|-- & -> q_EComercial
+|-- | -> q_BarraVertical
+|-- / -> q_Barra (A: T_OP_ARIT)
+|-- S -> q0
+|-- O -> q_Delimitador (A)
++-- EOF -> Fim
+
+q*Id (A)
+|-- L, D, * -> q_Id (A)
++-- Outro -> Finaliza Token, retorna para q0
+
+q_Int (A)
+|-- D -> q_Int (A)
+|-- . -> q_Fracao (A)
++-- Outro -> Finaliza Token, retorna para q0
+
+q_Ponto
++-- D -> q_Fracao (A)
+
+q_Fracao (A)
+|-- D -> q_Fracao (A)
++-- Outro -> Finaliza Token, retorna para q0
+
+q_Igual (A)
+|-- = -> q_IgualIgual (A: T_OP_REL)
++-- Outro -> Finaliza Token, retorna para q0
+
+q_Exclamacao (A)
++-- = -> q_Diferente (A: T_OP_REL)
+
+q_Menor (A)
++-- = -> q_MenorIgual (A: T_OP_REL)
+
+q_Maior (A)
++-- = -> q_MaiorIgual (A: T_OP_REL)
+
+q_EComercial
++-- & -> q_E_E (A: T_OP_LOGICO)
+
+q_BarraVertical
++-- | -> q_Ou_Ou (A: T_OP_LOGICO)
+
+q_Barra (A)
+|-- / -> q_ComentarioLinha
+|-- \* -> q_ComentarioBloco_Corpo
++-- Outro -> Finaliza Token, retorna para q0
+
+q_ComentarioLinha
+|-- \n -> q0
++-- Outro -> q_ComentarioLinha
+
+q_ComentarioBloco_Corpo
+|-- \* -> q_ComentarioBloco_Fim
++-- Outro -> q_ComentarioBloco_Corpo
+
+q_ComentarioBloco_Fim
+|-- / -> q0
+|-- \* -> q_ComentarioBloco_Fim
++-- Outro -> q_ComentarioBloco_Corpo
 
 ---
 
-## 5. Tabela de Transição (Simplificada)
+## 5. Tabela de Transição (Detalhada)
+
+Esta tabela representa a função de transição completa do autômato. As células com `Finaliza` indicam que um token foi reconhecido, o caractere atual não é consumido e o autômato retorna ao estado `q0`. `ERRO` indica uma transição inválida.
+
+| Estado Atual                | **L, \_**               | **D**                   | **.**                   | **=**                   | **!**                   | **<**                   | **>**                   | **&**                   | \*\*                    | \*\*                    | **/**                   | **\***                  | **S**                   | **O**                   | **\n**                  | **Outro** |
+| --------------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | ----------------------- | --------- |
+| **q0 (Inicial)**            | q_Id                    | q_Int                   | q_Ponto                 | q_Igual                 | q_Exclamacao            | q_Menor                 | q_Maior                 | q_EComercial            | q_BarraVertical         | q_Barra                 | q_Delimitador           | q0                      | q_Delimitador           | q0                      | ERRO                    |
+| **q_Id (A)**                | q_Id                    | q_Id                    | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Int (A)**               | Finaliza                | q_Int                   | q_Fracao                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Ponto**                 | ERRO                    | q_Fracao                | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    |
+| **q_Fracao (A)**            | Finaliza                | q_Fracao                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Igual (A)**             | Finaliza                | Finaliza                | Finaliza                | q_IgualIgual            | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Exclamacao (A)**        | Finaliza                | Finaliza                | Finaliza                | q_Diferente             | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Menor (A)**             | Finaliza                | Finaliza                | Finaliza                | q_MenorIgual            | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_Maior (A)**             | Finaliza                | Finaliza                | Finaliza                | q_MaiorIgual            | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_EComercial**            | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | q_E_E                   | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    |
+| **q_BarraVertical**         | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | q_Ou_Ou                 | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    | ERRO                    |
+| **q_Barra (A)**             | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | Finaliza                | q_ComentarioLinha       | q_ComentarioBloco_Corpo | Finaliza                | Finaliza                | Finaliza                | Finaliza                |
+| **q_ComentarioLinha**       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q_ComentarioLinha       | q0                      | q_ComentarioLinha       |
+| **q_ComentarioBloco_Corpo** | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Fim   | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo |
+| **q_ComentarioBloco_Fim**   | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q0                      | q_ComentarioBloco_Fim   | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo | q_ComentarioBloco_Corpo |
 
 A tabela de transição descreve para qual estado o autômato se move a partir de um estado atual e um caractere de entrada.
 
