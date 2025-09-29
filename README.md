@@ -52,79 +52,105 @@ As expressões regulares a seguir definem formalmente os padrões para os princi
 
 ---
 
-## 4. Diagrama do AFD (Detalhado)
+# 4. Diagrama do AFD (Detalhado)
 
-**Legenda:** `->` Estado Inicial, `(A)` = Estado de Aceitação (Final), `Outro` = Qualquer caractere não especificado na transição.
+**Legenda:**
 
--> q0 (Inicial)
-|-- L, \_ -> q_Id (A)
-|-- D -> q_Int (A)
-|-- . -> q_Ponto
-|-- = -> q_Igual (A: T_ATRIBUICAO)
-|-- ! -> q_Exclamacao (A: T_OP_LOGICO)
-|-- < -> q_Menor (A: T_OP_REL)
-|-- > -> q_Maior (A: T_OP_REL)
-|-- & -> q_EComercial
-|-- | -> q_BarraVertical
-|-- / -> q_Barra (A: T_OP_ARIT)
-|-- S -> q0
-|-- O -> q_Delimitador (A)
-+-- EOF -> Fim
-
-q*Id (A)
-|-- L, D, * -> q_Id (A)
-+-- Outro -> Finaliza Token, retorna para q0
-
-q_Int (A)
-|-- D -> q_Int (A)
-|-- . -> q_Fracao (A)
-+-- Outro -> Finaliza Token, retorna para q0
-
-q_Ponto
-+-- D -> q_Fracao (A)
-
-q_Fracao (A)
-|-- D -> q_Fracao (A)
-+-- Outro -> Finaliza Token, retorna para q0
-
-q_Igual (A)
-|-- = -> q_IgualIgual (A: T_OP_REL)
-+-- Outro -> Finaliza Token, retorna para q0
-
-q_Exclamacao (A)
-+-- = -> q_Diferente (A: T_OP_REL)
-
-q_Menor (A)
-+-- = -> q_MenorIgual (A: T_OP_REL)
-
-q_Maior (A)
-+-- = -> q_MaiorIgual (A: T_OP_REL)
-
-q_EComercial
-+-- & -> q_E_E (A: T_OP_LOGICO)
-
-q_BarraVertical
-+-- | -> q_Ou_Ou (A: T_OP_LOGICO)
-
-q_Barra (A)
-|-- / -> q_ComentarioLinha
-|-- \* -> q_ComentarioBloco_Corpo
-+-- Outro -> Finaliza Token, retorna para q0
-
-q_ComentarioLinha
-|-- \n -> q0
-+-- Outro -> q_ComentarioLinha
-
-q_ComentarioBloco_Corpo
-|-- \* -> q_ComentarioBloco_Fim
-+-- Outro -> q_ComentarioBloco_Corpo
-
-q_ComentarioBloco_Fim
-|-- / -> q0
-|-- \* -> q_ComentarioBloco_Fim
-+-- Outro -> q_ComentarioBloco_Corpo
+- `->` Estado Inicial
+- `(A)` Estado de Aceitação (Final)
+- `Outro` Qualquer caractere não especificado na transição
 
 ---
+
+### Estado Inicial
+
+```
+-> q0 (Inicial)
+ ├─ L, _       → q_Id (A)
+ ├─ D          → q_Int (A)
+ ├─ .          → q_Ponto
+ ├─ =          → q_Igual (A: T_ATRIBUICAO)
+ ├─ !          → q_Exclamacao (A: T_OP_LOGICO)
+ ├─ <          → q_Menor (A: T_OP_REL)
+ ├─ >          → q_Maior (A: T_OP_REL)
+ ├─ &          → q_EComercial
+ ├─ |          → q_BarraVertical
+ ├─ /          → q_Barra (A: T_OP_ARIT)
+ ├─ S          → q0
+ ├─ O          → q_Delimitador (A)
+ └─ EOF        → Fim
+```
+
+---
+
+### Estados de Identificadores e Números
+
+```
+q_Id (A)
+ ├─ L, D, *    → q_Id (A)
+ └─ Outro      → Finaliza Token, retorna para q0
+
+q_Int (A)
+ ├─ D          → q_Int (A)
+ ├─ .          → q_Fracao (A)
+ └─ Outro      → Finaliza Token, retorna para q0
+
+q_Ponto
+ └─ D          → q_Fracao (A)
+
+q_Fracao (A)
+ ├─ D          → q_Fracao (A)
+ └─ Outro      → Finaliza Token, retorna para q0
+```
+
+---
+
+### Estados de Operadores Relacionais e Lógicos
+
+```
+q_Igual (A)
+ ├─ =          → q_IgualIgual (A: T_OP_REL)
+ └─ Outro      → Finaliza Token, retorna para q0
+
+q_Exclamacao (A)
+ └─ =          → q_Diferente (A: T_OP_REL)
+
+q_Menor (A)
+ └─ =          → q_MenorIgual (A: T_OP_REL)
+
+q_Maior (A)
+ └─ =          → q_MaiorIgual (A: T_OP_REL)
+
+q_EComercial
+ └─ &          → q_E_E (A: T_OP_LOGICO)
+
+q_BarraVertical
+ └─ |          → q_Ou_Ou (A: T_OP_LOGICO)
+```
+
+---
+
+### Estados de Comentários e Operadores de Barra
+
+```
+q_Barra (A)
+ ├─ /          → q_ComentarioLinha
+ ├─ *          → q_ComentarioBloco_Corpo
+ └─ Outro      → Finaliza Token, retorna para q0
+
+q_ComentarioLinha
+ ├─ \n        → q0
+ └─ Outro      → q_ComentarioLinha
+
+q_ComentarioBloco_Corpo
+ ├─ *          → q_ComentarioBloco_Fim
+ └─ Outro      → q_ComentarioBloco_Corpo
+
+q_ComentarioBloco_Fim
+ ├─ /          → q0
+ ├─ *          → q_ComentarioBloco_Fim
+ └─ Outro      → q_ComentarioBloco_Corpo
+```
 
 ## 5. Tabela de Transição (Detalhada)
 

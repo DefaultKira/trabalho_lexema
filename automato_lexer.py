@@ -235,6 +235,7 @@ if __name__ == "__main__":
         "erro_comentario_nao_fechado": "int var = 1; /* este comentario nao fecha",
         "erro_simbolo_solto": "float val = 3.14 & 5;",
         "erro_caractere_invalido": "int resultado @= 10;",
+        "teste dois pontos": "int resultado : 10;",
         "teste_docx": "int resultado = 10.5; if(resultado > 10) {resultado = resultado + 1;} /*Fim do teste &*/ &"
     }
 
