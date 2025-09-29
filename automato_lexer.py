@@ -13,7 +13,7 @@ PALAVRAS_RESERVADAS = {
 TOKENS_DE_UM_CARACTERE = {
     ';': 'T_PONTO_VIRGULA', ',': 'T_VIRGULA', '(': 'T_PARENTESES_ESQ', ')': 'T_PARENTESES_DIR',
     '{': 'T_CHAVES_ESQ', '}': 'T_CHAVES_DIR', '+': 'T_OP_ARIT', '-': 'T_OP_ARIT',
-    '*': 'T_OP_ARIT', '%': 'T_OP_ARIT', '.': 'T_PONTO', ':': 'T_DOIS_PONTOS'
+    '*': 'T_OP_ARIT', '%': 'T_OP_ARIT', '.': 'T_PONTO', ':': 'T_DOIS_PONTOS', '^': 'T_OP_ARIT'
 }
 
 class AnalisadorLexico:
@@ -68,7 +68,6 @@ class AnalisadorLexico:
 
             linha_inicio, coluna_inicio = self.linha, self.coluna
 
-            # --- Etapa 2: Reconhecer Identificadores e Palavras Reservadas ---
             if char_atual.isalpha() or char_atual == '_':
                 lexema = ''
                 while self.ver_proximo() is not None and (self.ver_proximo().isalnum() or self.ver_proximo() == '_'):
@@ -225,6 +224,7 @@ if __name__ == "__main__":
         "teste_completo": "if (x_val >= 10.5) { y = y + 1; } // fim da linha",
         "teste_comentario_bloco": "while (a != b) { /* comentario de bloco */ c = 3.14e-2; }",
         "teste_numeros": "x = .5; y = 123.; z = 5e;",
+        "teste_expoente": "x = 5^4; y = 1+y^2;",
         "teste_logico": "a && b || !c;",
         "erro_comentario_nao_fechado": "int var = 1; /* este comentario nao fecha",
         "erro_simbolo_solto": "float val = 3.14 & 5;",
