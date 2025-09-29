@@ -52,7 +52,7 @@ As expressões regulares a seguir definem formalmente os padrões para os princi
 
 ---
 
-# 4. Diagrama do AFD (Detalhado)
+## 4. Diagrama do AFD (Detalhado)
 
 **Legenda:**
 
