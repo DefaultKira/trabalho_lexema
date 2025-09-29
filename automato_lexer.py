@@ -17,10 +17,6 @@ TOKENS_DE_UM_CARACTERE = {
 }
 
 class AnalisadorLexico:
-    """
-    Classe principal que implementa o Analisador Léxico (Lexer).
-    Percorre o código fonte e o converte em uma lista de tokens.
-    """
     def __init__(self, codigo_fonte: str):
         self.codigo_fonte = codigo_fonte
         self.posicao_atual = 0
@@ -50,7 +46,6 @@ class AnalisadorLexico:
         return char_atual
 
     def adicionar_token(self, tipo: str, lexema: str, linha: int, coluna: int):
-        """ Adiciona um token reconhecido à lista de tokens. """
         self.tokens.append((tipo, lexema, linha, coluna))
         # Se o token for um identificador, adiciona à tabela de símbolos se for a primeira vez
         if tipo == 'T_ID':
@@ -200,7 +195,6 @@ class AnalisadorLexico:
 
 
 def imprimir_resultados(tokens, tabela_simbolos, erros):
-    """ Formata e imprime os resultados da análise léxica. """
     print("\n--- LISTA DE TOKENS ---")
     if not tokens:
         print("  (Nenhum token foi reconhecido)")
