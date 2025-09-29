@@ -106,7 +106,7 @@ class AnalisadorLexico:
                             lexema += self.avancar()
                 
                 # Consome a parte do expoente (se houver)
-                if self.ver_proximo() and self.ver_proximo().lower() == 'e':
+                if self.ver_proximo() and self.ver_proximo().lower() == '^':
                     viu_expoente = True
                     lexema += self.avancar()
                     if self.ver_proximo() and self.ver_proximo() in ('+', '-'):
