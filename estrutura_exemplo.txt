@@ -1,0 +1,50 @@
+Codigo fonte:
+/*
+ * Exemplo de uma função que demonstra
+ * vários tokens da linguagem.
+ */
+float calcular_soma(int limite) {
+    float soma = 0.0;
+    int i;
+
+    // Loop para somar os números de 1 até o limite
+    for (i = 1; i <= limite; i = i + 1) {
+        if (soma > 1000.5) {
+            // Interrompe se a soma ficar muito grande
+            break;
+        } else {
+            soma = soma + i;
+        }
+    }
+
+    if (limite > 0 && soma != 0.0) {
+        return soma;
+    }
+
+    return 0.0; // Retorno padrão
+}
+
+// O bloco de comentário inicial foi removido pelo analisador léxico.
+// Ele não gera nenhum token.
+
+T_TIPO T_ID(T_TIPO (T_ID, 1)) {
+    T_TIPO (T_ID, 2) T_ATRIBUICAO T_NUMERO_FLOAT;
+    T_TIPO (T_ID, 3);
+
+    // O comentário de linha "Loop para somar..." também foi removido.
+
+    FOR ((T_ID, 4) T_ATRIBUICAO T_NUMERO_INT; (T_ID, 4) T_OP_REL (T_ID, 1); (T_ID, 4) T_ATRIBUICAO (T_ID, 4) T_OP_ARIT T_NUMERO_INT) {
+        IF ((T_ID, 2) T_OP_REL T_NUMERO_FLOAT) {
+            // O comentário de linha "Interrompe se..." foi removido.
+            BREAK;
+        } ELSE {
+            (T_ID, 2) T_ATRIBUICAO (T_ID, 2) T_OP_ARIT (T_ID, 4);
+        }
+    }
+
+    IF ((T_ID, 1) T_OP_REL T_NUMERO_INT T_OP_LOGICO (T_ID, 2) T_OP_REL T_NUMERO_FLOAT) {
+        RETURN (T_ID, 2);
+    }
+
+    RETURN T_NUMERO_FLOAT; // O comentário "Retorno padrão" foi removido.
+}
