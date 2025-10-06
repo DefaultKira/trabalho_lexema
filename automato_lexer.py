@@ -29,6 +29,7 @@ TOKENS_DE_UM_CARACTERE = {
     '%': 'T_OP_ARIT',
     '.': '.',
     ':': ':',
+    '^': 'T_OP_ARIT'
 }
 
 class AnalisadorLexico:
@@ -38,7 +39,6 @@ class AnalisadorLexico:
         self.linha = 1
         self.coluna = 1
         self.tokens: List[Tuple[str, str, int, int]] = []
-        # Tabela de símbolos aprimorada para guardar mais informações
         self.tabela_simbolos: Dict[str, Dict[str, Any]] = {}
         self.proximo_id_simbolo = 1
         self.erros: List[Tuple[str, int, int]] = []
@@ -111,33 +111,29 @@ class AnalisadorLexico:
             # Caso 2: Ponto seguido por letra (número malformado)
             elif char_apos_ponto and char_apos_ponto.isalpha():
                 lexema += self.avancar() # consome o '.'
-                # Continua consumindo para capturar todo o lexema inválido
                 while self.ver_proximo() and self.ver_proximo().isalnum():
                     lexema += self.avancar()
                 self.adicionar_erro(f"Número malformado '{lexema}'. Após o ponto decimal, esperava-se um dígito.", linha_inicio, coluna_inicio)
-                
+                # <-- CORREÇÃO: Adiciona o token de erro que estava faltando.
+                self.adicionar_token('T_ERRO', lexema, linha_inicio, coluna_inicio)
                 return # Encerra a análise deste número aqui
 
-            # Caso 3: Ponto seguido por espaço, operador, etc.
-            # Neste caso, o número é considerado um inteiro e o ponto será
-            # processado como um token separado no laço principal. Não fazemos nada aqui.
-
-        # Parte do expoente (aceita 'e', 'E', ou '^')
+        # <-- CORREÇÃO: Lógica de expoente reintroduzida.
+        # Parte do expoente (aceita 'e' ou 'E')
         proximo_char = self.ver_proximo()
-        if proximo_char and proximo_char.lower() in ('e', '^'):
-            is_float = True
-            lexema += self.avancar()
-            if self.ver_proximo() in ('+', '-'):
-                lexema += self.avancar()
 
-            if not (self.ver_proximo() and self.ver_proximo().isdigit()):
-                self.adicionar_erro(f"Expoente malformado no número '{lexema}'", linha_inicio, coluna_inicio)
-                self.adicionar_token('T_ERRO', lexema, linha_inicio, coluna_inicio)
-                return
-
-            while self.ver_proximo() and self.ver_proximo().isdigit():
+        # <-- CORREÇÃO: Verificação de número inválido reintroduzida.
+        # Após formar um número, verifica se ele é seguido por uma letra, o que é inválido.
+        proximo_char_final = self.ver_proximo()
+        if proximo_char_final and proximo_char_final.isalpha():
+            # Consome o resto do identificador inválido para formar um único token de erro
+            while self.ver_proximo() and self.ver_proximo().isalnum():
                 lexema += self.avancar()
-        
+            
+            mensagem_erro = f"Número inválido: '{lexema}'. Uma sequência de dígitos não pode ser seguida por uma letra."
+            self.adicionar_erro(mensagem_erro, linha_inicio, coluna_inicio)
+            return # Encerra aqui para não criar um token de número válido.
+
         # Decide o tipo do token se não houve erro
         if is_float:
             self.adicionar_token('T_NUMERO_FLOAT', lexema, linha_inicio, coluna_inicio)
@@ -272,7 +268,7 @@ if __name__ == "__main__":
         "erro_caractere_invalido": "int resultado @= 10;",
         "teste dois pontos": "int resultado : 10;",
         "teste_docx": "int resultado = 10.5; if(resultado > 10) {resultado = resultado + 1;} /*Fim do teste &*/ &",
-        "teste_aritmetico": "int soma = 1 + 3; float divisao = 2/4; int multi = 2*2; int expo = 2^3; int mod = 2%2"
+        "teste_aritmetico": "int soma = 1 + 3; float divisao = 2/4; int multi = 2*2; int expo = 2^3, int expo2 2e3; int mod = 2%2"
     }
 
     for nome_amostra, codigo in amostras.items():
