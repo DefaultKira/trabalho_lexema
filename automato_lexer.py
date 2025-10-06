@@ -114,11 +114,9 @@ class AnalisadorLexico:
                 while self.ver_proximo() and self.ver_proximo().isalnum():
                     lexema += self.avancar()
                 self.adicionar_erro(f"Número malformado '{lexema}'. Após o ponto decimal, esperava-se um dígito.", linha_inicio, coluna_inicio)
-                # <-- CORREÇÃO: Adiciona o token de erro que estava faltando.
-                self.adicionar_token('T_ERRO', lexema, linha_inicio, coluna_inicio)
-                return # Encerra a análise deste número aqui
 
-        # <-- CORREÇÃO: Lógica de expoente reintroduzida.
+                return 
+
         # Parte do expoente (aceita 'e' ou 'E')
         proximo_char = self.ver_proximo()
 
