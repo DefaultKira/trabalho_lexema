@@ -17,6 +17,14 @@ float calcular_soma(int limite) {
         }
     }
 
+    do{
+        i = i + 1
+    } while(true);
+
+    while(soma < 10){
+        soma = soma + i;
+    }
+
     if (limite > 0 && soma != 0.0) {
         return soma;
     }
@@ -28,23 +36,32 @@ float calcular_soma(int limite) {
 // Ele não gera nenhum token.
 
 T_TIPO T_ID(T_TIPO (T_ID, 1)) {
-    T_TIPO (T_ID, 2) T_ATRIBUICAO T_NUMERO_FLOAT;
+    T_TIPO (T_ID, 2) = T_NUMERO_FLOAT;
     T_TIPO (T_ID, 3);
 
     // O comentário de linha "Loop para somar..." também foi removido.
 
-    FOR ((T_ID, 4) T_ATRIBUICAO T_NUMERO_INT; (T_ID, 4) T_OP_REL (T_ID, 1); (T_ID, 4) T_ATRIBUICAO (T_ID, 4) T_OP_ARIT T_NUMERO_INT) {
+    FOR ((T_ID, 4) = T_NUMERO_INT; (T_ID, 4) T_OP_REL (T_ID, 1); (T_ID, 4) = (T_ID, 4) T_OP_ARIT T_NUMERO_INT) {
         IF ((T_ID, 2) T_OP_REL T_NUMERO_FLOAT) {
             // O comentário de linha "Interrompe se..." foi removido.
             BREAK;
         } ELSE {
-            (T_ID, 2) T_ATRIBUICAO (T_ID, 2) T_OP_ARIT (T_ID, 4);
+            (T_ID, 2) = (T_ID, 2) T_OP_ARIT (T_ID, 4);
         }
+    }
+
+    DO {
+        (T_ID, 4) = (T_ID, 4) T_OP_ARIT T_NUMERO_INT;
+    } WHILE (T_BOOL);
+
+    WHILE ((T_ID, 2) T_OP_REL T_NUMERO_INT) {
+        (T_ID, 2) = (T_ID, 2) T_OP_ARIT (T_ID, 4);
     }
 
     IF ((T_ID, 1) T_OP_REL T_NUMERO_INT T_OP_LOGICO (T_ID, 2) T_OP_REL T_NUMERO_FLOAT) {
         RETURN (T_ID, 2);
     }
+    
 
     RETURN T_NUMERO_FLOAT; // O comentário "Retorno padrão" foi removido.
 }

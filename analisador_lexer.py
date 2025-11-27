@@ -1,4 +1,3 @@
-# Importações necessárias para anotação de tipos e para o sistema
 from typing import List, Tuple, Optional, Dict, Any
 import sys
 
@@ -120,7 +119,6 @@ class AnalisadorLexico:
         # Parte do expoente (aceita 'e' ou 'E')
         proximo_char = self.ver_proximo()
 
-        # <-- CORREÇÃO: Verificação de número inválido reintroduzida.
         # Após formar um número, verifica se ele é seguido por uma letra, o que é inválido.
         proximo_char_final = self.ver_proximo()
         if proximo_char_final and proximo_char_final.isalpha():
@@ -194,7 +192,7 @@ class AnalisadorLexico:
                     lexema += self.avancar()
                     self.adicionar_token('T_OP_REL', lexema, linha_inicio, coluna_inicio)
                 else:
-                    if lexema == '=': self.adicionar_token('T_ATRIBUICAO', lexema, linha_inicio, coluna_inicio)
+                    if lexema == '=': self.adicionar_token('=', lexema, linha_inicio, coluna_inicio)
                     elif lexema == '!': self.adicionar_token('T_OP_LOGICO', lexema, linha_inicio, coluna_inicio)
                     else: self.adicionar_token('T_OP_REL', lexema, linha_inicio, coluna_inicio)
                 continue
@@ -266,7 +264,7 @@ if __name__ == "__main__":
         "erro_caractere_invalido": "int resultado @= 10;",
         "teste dois pontos": "int resultado : 10;",
         "teste_docx": "int resultado = 10.5; if(resultado > 10) {resultado = resultado + 1;} /*Fim do teste &*/ &",
-        "teste_aritmetico": "int soma = 1 + 3; float divisao = 2/4; int multi = 2*2; int expo = 2^3, int expo2 2e3; int mod = 2%2"
+        "teste_aritmetico": "int soma_teste = 1 + 3; float divisao = 2/4; int multi = 2*2; int expo = 2^3, int expo2 2e3, int expo3 = 2.4^-5; int mod = 2%2"
     }
 
     for nome_amostra, codigo in amostras.items():

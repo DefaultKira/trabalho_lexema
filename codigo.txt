@@ -1,0 +1,28 @@
+float calcular_soma(int limite) {
+    float soma = 0.0;
+    int i;
+
+    // Loop para somar os números de 1 até o limite
+    for (i = 1; i <= limite; i = i + 1) {
+        if (soma > 1000.5) {
+            // Interrompe se a soma ficar muito grande
+            break;
+        } else {
+            soma = soma + i;
+        }
+    }
+
+    do{
+        i = i + 1
+    } while(true);
+
+    while(soma < 10){
+        soma = soma + i;
+    }
+
+    if (limite > 0 && soma != 0.0) {
+        return soma;
+    }
+
+    return 0.0; // Retorno padrão
+}
