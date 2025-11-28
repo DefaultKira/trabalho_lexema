@@ -141,159 +141,203 @@ class AnalisadorSintatico:
         self.erros.append(erro_fmt)
 
     def _construir_tabela_m(self):
-        """Retorna a Tabela M baseada na Gramática de 30 regras."""
         return {
+            # PROGRAMA -> LISTA_DECL_EXTERNAS
             'PROGRAMA': {
-                'tipo': ('p',),
-                'EOF': ('p',)
-            },
-            'LISTA_DECL_EXTERNAS': {
-                'tipo': ('p',),
+                'tipo': ('p', ['LISTA_DECL_EXTERNAS']),
                 'EOF': ('epsilon',)
             },
+
+            # LISTA_DECL_EXTERNAS -> DECL_EXTERNA LISTA_DECL_EXTERNAS | epsilon
+            'LISTA_DECL_EXTERNAS': {
+                'tipo': ('p', ['DECL_EXTERNA', 'LISTA_DECL_EXTERNAS']),
+                'EOF': ('epsilon',)
+            },
+
+            # DECL_EXTERNA -> tipo id DECL_RESTO
             'DECL_EXTERNA': {
-                'tipo': ('p',)
+                'tipo': ('p', ['tipo', 'id', 'DECL_RESTO'])
             },
+
+            # DECL_RESTO -> ( PARAMS ) BLOCO
+            #            -> INICIALIZACAO_OPCIONAL LISTA_IDS_RESTO ;
             'DECL_RESTO': {
-                '(': ('p',),
-                '=': ('p',),
-                ',': ('p',),
-                ';': ('p',)
+                '(': ('p', ['(', 'PARAMS', ')', 'BLOCO']),   # função
+                '=': ('p', ['INICIALIZACAO_OPCIONAL', 'LISTA_IDS_RESTO', ';']),
+                ',': ('p', ['INICIALIZACAO_OPCIONAL', 'LISTA_IDS_RESTO', ';']),
+                ';': ('p', ['INICIALIZACAO_OPCIONAL', 'LISTA_IDS_RESTO', ';'])
             },
+
+            # PARAMS -> LISTA_PARAMS | epsilon
             'PARAMS': {
-                'tipo': ('p',),
+                'tipo': ('p', ['LISTA_PARAMS']),
                 ')': ('epsilon',)
             },
+
+            # LISTA_PARAMS -> PARAMETRO LISTA_PARAMS_RESTO
             'LISTA_PARAMS': {
-                'tipo': ('p',)
+                'tipo': ('p', ['PARAMETRO', 'LISTA_PARAMS_RESTO'])
             },
+
+            # LISTA_PARAMS_RESTO -> , PARAMETRO LISTA_PARAMS_RESTO | epsilon
             'LISTA_PARAMS_RESTO': {
-                ',': ('p',),
+                ',': ('p', [',', 'PARAMETRO', 'LISTA_PARAMS_RESTO']),
                 ')': ('epsilon',)
             },
+
+            # PARAMETRO -> tipo id
             'PARAMETRO': {
                 'tipo': ('p', ['tipo', 'id'])
             },
+
+            # INICIALIZACAO_OPCIONAL -> = EXPRESSAO | epsilon
             'INICIALIZACAO_OPCIONAL': {
-                '=': ('p',),
-                ',': ('epsilon',),
-                ';': ('epsilon',)
+                '=': ('p', ['=', 'EXPRESSAO']),
+                ',': ('epsilon',), ';': ('epsilon',)
             },
+
+            # LISTA_IDS_RESTO -> , id INICIALIZACAO_OPCIONAL LISTA_IDS_RESTO | epsilon
             'LISTA_IDS_RESTO': {
-                ',': ('p',),
+                ',': ('p', [',', 'id', 'INICIALIZACAO_OPCIONAL', 'LISTA_IDS_RESTO']),
                 ';': ('epsilon',)
             },
+
+            # BLOCO -> { LISTA_COMANDOS }
             'BLOCO': {
-                '{': ('p',),
-                # SYNC (Follow)
-                'if': ('sync',), 'while': ('sync',), 'do': ('sync',), 'for': ('sync',),
-                'return': ('sync',), 'break': ('sync',), 'continue': ('sync',), 
-                'id': ('sync',), 'else': ('sync',), 'tipo': ('sync',), 'EOF': ('sync',)
+                '{': ('p', ['{', 'LISTA_COMANDOS', '}'])
             },
+
+            # LISTA_COMANDOS -> COMANDO LISTA_COMANDOS | epsilon
             'LISTA_COMANDOS': {
-                'if': ('p',),
-                'while': ('p',),
-                'do': ('p',),
-                'for': ('p',),
-                'return': ('p',),
-                'break': ('p',),
-                'continue': ('p',),
-                'id': ('p',),
-                '{': ('p',),
+                'if': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'while': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'do': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'for': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'return': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'break': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'continue': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                'id': ('p', ['COMANDO', 'LISTA_COMANDOS']),
+                '{': ('p', ['COMANDO', 'LISTA_COMANDOS']),
                 '}': ('epsilon',)
             },
+
+            # COMANDO -> CMD_IF | CMD_WHILE | CMD_DO_WHILE | CMD_FOR | CMD_RETURN |
+            #            CMD_BREAK | CMD_CONTINUE | CMD_ATRIBUICAO | BLOCO
             'COMANDO': {
-                'if': ('p',),
-                'while': ('p',),
-                'do': ('p',),
-                'for': ('p',),
-                'return': ('p',),
-                'break': ('p',),
-                'continue': ('p',),
-                'id': ('p',),
-                '{': ('p',),
-                # SYNC (Follow)
-                'else': ('sync',), '}': ('sync',), 'EOF': ('sync',)
+                'if': ('p', ['CMD_IF']),
+                'while': ('p', ['CMD_WHILE']),
+                'do': ('p', ['CMD_DO_WHILE']),
+                'for': ('p', ['CMD_FOR']),
+                'return': ('p', ['CMD_RETURN']),
+                'break': ('p', ['CMD_BREAK']),
+                'continue': ('p', ['CMD_CONTINUE']),
+                'id': ('p', ['ATRIBUICAO_SIMPLES', ';']),
+                '{': ('p', ['BLOCO'])
             },
+
+            # CMD_IF -> if ( EXPRESSAO ) COMANDO CMD_IF_RESTO
             'CMD_IF': {
-                'if': ('p',)
+                'if': ('p', ['if', '(', 'EXPRESSAO', ')', 'COMANDO', 'CMD_IF_RESTO'])
             },
+
+            # CMD_IF_RESTO -> else COMANDO | epsilon
             'CMD_IF_RESTO': {
-                'else': ('p',),
-                # Epsilon para Follow(CMD_IF_RESTO) -> Follow(COMANDO)
+                'else': ('p', ['else', 'COMANDO']),
+                # follow(COMD_IF_RESTO) -> begin tokens of COMANDO and '}' and EOF
                 'if': ('epsilon',), 'while': ('epsilon',), 'do': ('epsilon',),
                 'for': ('epsilon',), 'return': ('epsilon',), 'break': ('epsilon',),
                 'continue': ('epsilon',), 'id': ('epsilon',), '{': ('epsilon',),
                 '}': ('epsilon',), 'EOF': ('epsilon',)
             },
+
+            # CMD_WHILE -> while ( EXPRESSAO ) COMANDO
             'CMD_WHILE': {
-                'while': ('p',)
+                'while': ('p', ['while', '(', 'EXPRESSAO', ')', 'COMANDO'])
             },
+
+            # CMD_DO_WHILE -> do BLOCO while ( EXPRESSAO ) ;
             'CMD_DO_WHILE': {
-                'do': ('p',)
+                'do': ('p', ['do', 'BLOCO', 'while', '(', 'EXPRESSAO', ')', ';'])
             },
+
+            # CMD_FOR -> for ( ATRIBUICAO_SIMPLES ; EXPRESSAO ; ATRIBUICAO_SIMPLES ) COMANDO
             'CMD_FOR': {
-                'for': ('p',)
+                'for': ('p', ['for', '(', 'ATRIBUICAO_SIMPLES', ';', 'EXPRESSAO', ';', 'ATRIBUICAO_SIMPLES', ')', 'COMANDO'])
             },
+
+            # ATRIBUICAO_SIMPLES -> id = EXPRESSAO
             'ATRIBUICAO_SIMPLES': {
-                'id': ('p',)
+                'id': ('p', ['id', '=', 'EXPRESSAO'])
             },
+
+            # CMD_RETURN -> return EXPRESSAO ;
             'CMD_RETURN': {
-                'return': ('p',)
+                'return': ('p', ['return', 'EXPRESSAO', ';'])
             },
+
+            # CMD_BREAK -> break ;
             'CMD_BREAK': {
                 'break': ('p', ['break', ';'])
             },
+
+            # CMD_CONTINUE -> continue ;
             'CMD_CONTINUE': {
                 'continue': ('p', ['continue', ';'])
             },
-            'CMD_ATRIBUICAO': {
-                'id': ('p',)
-            },
-            # --- EXPRESSÕES ---
+
+            # EXPRESSAO -> EXPR_RELACIONAL EXPR_LOGICA_LINHA
             'EXPRESSAO': {
-                '(': ('p',),
-                'id': ('p',),
-                'numero': ('p',),
-                # SYNC
-                ')': ('sync',), ';': ('sync',), ',': ('sync',)
+                '(': ('p', ['EXPR_RELACIONAL', 'EXPR_LOGICA_LINHA']),
+                'id': ('p', ['EXPR_RELACIONAL', 'EXPR_LOGICA_LINHA']),
+                'numero': ('p', ['EXPR_RELACIONAL', 'EXPR_LOGICA_LINHA'])
             },
+
+            # EXPR_LOGICA_LINHA -> op_logico EXPR_RELACIONAL EXPR_LOGICA_LINHA | epsilon
             'EXPR_LOGICA_LINHA': {
-                'op_logico': ('p',),
-                ')': ('epsilon',), ';': ('epsilon',), ',': ('epsilon',)
+                'op_logico': ('p', ['op_logico', 'EXPR_RELACIONAL', 'EXPR_LOGICA_LINHA']),
+                ')': ('epsilon',), ';': ('epsilon',), ',': ('epsilon',), '}': ('epsilon',),
+                'else': ('epsilon',), 'EOF': ('epsilon',)
             },
+
+            # EXPR_RELACIONAL -> EXPR_ARITMETICA EXPR_RELACIONAL_LINHA
             'EXPR_RELACIONAL': {
-                '(': ('p',),
-                'id': ('p',),
-                'numero': ('p',),
-                # SYNC
-                'op_logico': ('sync',), ')': ('sync',), ';': ('sync',), ',': ('sync',)
+                '(': ('p', ['EXPR_ARITMETICA', 'EXPR_RELACIONAL_LINHA']),
+                'id': ('p', ['EXPR_ARITMETICA', 'EXPR_RELACIONAL_LINHA']),
+                'numero': ('p', ['EXPR_ARITMETICA', 'EXPR_RELACIONAL_LINHA'])
             },
+
+            # EXPR_RELACIONAL_LINHA -> op_rel EXPR_ARITMETICA | epsilon
             'EXPR_RELACIONAL_LINHA': {
-                'op_rel': ('p',),
-                'op_logico': ('epsilon',), ')': ('epsilon',), ';': ('epsilon',), ',': ('epsilon',)
+                'op_rel': ('p', ['op_rel', 'EXPR_ARITMETICA']),
+                'op_logico': ('epsilon',), ')': ('epsilon',), ';': ('epsilon',), ',': ('epsilon',),
+                '}': ('epsilon',), 'else': ('epsilon',), 'EOF': ('epsilon',)
             },
+
+            # EXPR_ARITMETICA -> FATOR EXPR_ARITMETICA_LINHA
             'EXPR_ARITMETICA': {
-                '(': ('p',),
-                'id': ('p',),
-                'numero': ('p',),
-                # SYNC
-                'op_rel': ('sync',), 'op_logico': ('sync',), ')': ('sync',), ';': ('sync',), ',': ('sync',)
+                '(': ('p', ['FATOR', 'EXPR_ARITMETICA_LINHA']),
+                'id': ('p', ['FATOR', 'EXPR_ARITMETICA_LINHA']),
+                'numero': ('p', ['FATOR', 'EXPR_ARITMETICA_LINHA'])
             },
+
+            # EXPR_ARITMETICA_LINHA -> op_arit FATOR EXPR_ARITMETICA_LINHA | epsilon
             'EXPR_ARITMETICA_LINHA': {
-                'op_arit': ('p',),
-                'op_rel': ('epsilon',), 'op_logico': ('epsilon',), 
-                ')': ('epsilon',), ';': ('epsilon',), ',': ('epsilon',)
+                'op_arit': ('p', ['op_arit', 'FATOR', 'EXPR_ARITMETICA_LINHA']),
+                'op_rel': ('epsilon',), 'op_logico': ('epsilon',), ')': ('epsilon',), ';': ('epsilon',),
+                ',': ('epsilon',), '}': ('epsilon',), 'else': ('epsilon',), 'EOF': ('epsilon',)
             },
+
+            # FATOR -> ( EXPRESSAO ) | id | numero
             'FATOR': {
-                '(': ('p',),
+                '(': ('p', ['(', 'EXPRESSAO', ')']),
                 'id': ('p', ['id']),
                 'numero': ('p', ['numero']),
-                # SYNC
-                'op_arit': ('sync',), 'op_rel': ('sync',), 'op_logico': ('sync',), 
+                # Em caso de sincronização em expressões
+                'op_arit': ('sync',), 'op_rel': ('sync',), 'op_logico': ('sync',),
                 ')': ('sync',), ';': ('sync',), ',': ('sync',)
             }
         }
+
 
 # --- Integração e Teste ---
 if __name__ == "__main__":
